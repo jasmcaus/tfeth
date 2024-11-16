@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Loader2, ArrowDownIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useDebounce } from "@/hooks/use-debounce"
-import { Token, CurrencyAmount, TradeType } from '@uniswap/sdk-core'
-import { Pair, Route, Trade } from '@uniswap/v2-sdk'
-import { mainnet } from 'wagmi/chains'
+import { Token, CurrencyAmount, TradeType } from "@uniswap/sdk-core"
+import { Pair, Route, Trade } from "@uniswap/v2-sdk"
+import { mainnet } from "wagmi/chains"
 
 // Contract addresses and pair address
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
@@ -19,21 +19,9 @@ const UNISWAP_V2_ROUTER_ADDRESS = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
 const WETH_DAI_PAIR_ADDRESS = "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
 
 // Token Definitions
-const WETH_TOKEN = new Token(
-    mainnet.id,
-    WETH_ADDRESS,
-    18,
-    "WETH",
-    "Wrapped Ether"
-)
+const WETH_TOKEN = new Token(mainnet.id, WETH_ADDRESS, 18, "WETH", "Wrapped Ether")
 
-const DAI_TOKEN = new Token(
-    mainnet.id,
-    DAI_ADDRESS,
-    18,
-    "DAI",
-    "Dai Stablecoin"
-)
+const DAI_TOKEN = new Token(mainnet.id, DAI_ADDRESS, 18, "DAI", "Dai Stablecoin")
 
 // Router ABI (only the functions we need)
 const ROUTER_ABI = [
@@ -43,13 +31,13 @@ const ROUTER_ABI = [
             { name: "amountOutMin", type: "uint256" },
             { name: "path", type: "address[]" },
             { name: "to", type: "address" },
-            { name: "deadline", type: "uint256" }
+            { name: "deadline", type: "uint256" },
         ],
         name: "swapExactTokensForTokens",
         outputs: [{ name: "amounts", type: "uint256[]" }],
         stateMutability: "nonpayable",
-        type: "function"
-    }
+        type: "function",
+    },
 ] as const
 
 const MOCK_BALANCES = {
@@ -64,7 +52,7 @@ const MOCK_BALANCES = {
     ETH: {
         formatted: "3.0",
         value: BigInt("3000000000000000000"), // 3.0 ETH for gas
-    }
+    },
 }
 
 export function TokenSwap() {
@@ -93,7 +81,7 @@ export function TokenSwap() {
                 console.log("GAS PRICE", price)
                 setGasPrice(price!)
             } catch (error) {
-                console.error('Error fetching gas price:', error)
+                console.error("Error fetching gas price:", error)
                 setGasPrice(null)
             }
         }
@@ -115,29 +103,28 @@ export function TokenSwap() {
             try {
                 const gasEstimate = await publicClient?.estimateContractGas({
                     address: WETH_ADDRESS,
-                    abi: [{
-                        constant: false,
-                        inputs: [
-                            { name: "spender", type: "address" },
-                            { name: "value", type: "uint256" }
-                        ],
-                        name: "approve",
-                        outputs: [{ name: "", type: "bool" }],
-                        payable: false,
-                        stateMutability: "nonpayable",
-                        type: "function"
-                    }] as const,
-                    functionName: 'approve',
-                    args: [
-                        UNISWAP_V2_ROUTER_ADDRESS,
-                        parseEther(wethAmount)
-                    ],
+                    abi: [
+                        {
+                            constant: false,
+                            inputs: [
+                                { name: "spender", type: "address" },
+                                { name: "value", type: "uint256" },
+                            ],
+                            name: "approve",
+                            outputs: [{ name: "", type: "bool" }],
+                            payable: false,
+                            stateMutability: "nonpayable",
+                            type: "function",
+                        },
+                    ] as const,
+                    functionName: "approve",
+                    args: [UNISWAP_V2_ROUTER_ADDRESS, parseEther(wethAmount)],
                     account: address,
                 })
 
                 setEstimatedGas(gasEstimate!)
             } catch (error) {
-                console.error('Error estimating gas:', error)
+                console.error("Error estimating gas:", error)
                 setEstimatedGas(null)
             }
         }
@@ -166,7 +153,7 @@ export function TokenSwap() {
             const hasEnough = Number(MOCK_BALANCES.ETH.formatted) >= Number(gasFeeInEth)
             setHasEnoughEthForGas(hasEnough)
         } catch (error) {
-            console.error('Error calculating gas fee:', error)
+            console.error("Error calculating gas fee:", error)
             setEstimatedGasFee(null)
         }
     }, [estimatedGas, gasPrice])
@@ -177,12 +164,12 @@ export function TokenSwap() {
     useEffect(() => {
         const fetchPrice = async () => {
             if (!debouncedWethAmount && !debouncedDaiAmount) return
-            
+
             try {
                 setIsLoadingPrice(true)
 
                 // Get reserves from the pair contract
-                const [reserve0, reserve1] = await publicClient?.readContract({
+                const [reserve0, reserve1] = (await publicClient?.readContract({
                     address: WETH_DAI_PAIR_ADDRESS,
                     abi: [
                         {
@@ -192,56 +179,49 @@ export function TokenSwap() {
                             outputs: [
                                 { name: "_reserve0", type: "uint112" },
                                 { name: "_reserve1", type: "uint112" },
-                                { name: "_blockTimestampLast", type: "uint32" }
+                                { name: "_blockTimestampLast", type: "uint32" },
                             ],
-                            type: "function"
-                        }
+                            type: "function",
+                        },
                     ],
                     functionName: "getReserves",
-                }) as [bigint, bigint, number]
+                })) as [bigint, bigint, number]
 
                 // Create pair instance
                 const pair = new Pair(
                     CurrencyAmount.fromRawAmount(DAI_TOKEN, reserve0.toString()),
-                    CurrencyAmount.fromRawAmount(WETH_TOKEN, reserve1.toString())
+                    CurrencyAmount.fromRawAmount(WETH_TOKEN, reserve1.toString()),
                 )
 
                 if (activeInput === "WETH" && debouncedWethAmount) {
                     // Create route
                     const route = new Route([pair], WETH_TOKEN, DAI_TOKEN)
-                    
+
                     // Create trade
                     const trade = new Trade(
                         route,
-                        CurrencyAmount.fromRawAmount(
-                            WETH_TOKEN,
-                            parseEther(debouncedWethAmount).toString()
-                        ),
-                        TradeType.EXACT_INPUT
+                        CurrencyAmount.fromRawAmount(WETH_TOKEN, parseEther(debouncedWethAmount).toString()),
+                        TradeType.EXACT_INPUT,
                     )
 
                     setDaiAmount(trade.outputAmount.toSignificant(6))
                     setExchangeRate(`1 WETH = ${route.midPrice.toSignificant(6)} DAI`)
-                }
-                else if (activeInput === "DAI" && debouncedDaiAmount) {
+                } else if (activeInput === "DAI" && debouncedDaiAmount) {
                     // Create route
                     const route = new Route([pair], DAI_TOKEN, WETH_TOKEN)
-                    
+
                     // Create trade
                     const trade = new Trade(
                         route,
-                        CurrencyAmount.fromRawAmount(
-                            DAI_TOKEN,
-                            parseEther(debouncedDaiAmount).toString()
-                        ),
-                        TradeType.EXACT_INPUT
+                        CurrencyAmount.fromRawAmount(DAI_TOKEN, parseEther(debouncedDaiAmount).toString()),
+                        TradeType.EXACT_INPUT,
                     )
 
                     setWethAmount(trade.outputAmount.toSignificant(6))
                     setExchangeRate(`1 DAI = ${route.midPrice.toSignificant(6)} WETH`)
                 }
             } catch (error) {
-                console.error('Error fetching price:', error)
+                console.error("Error fetching price:", error)
             } finally {
                 setIsLoadingPrice(false)
             }
@@ -259,7 +239,7 @@ export function TokenSwap() {
 
     const isExceedingBalance = () => {
         if (!wethAmount || !daiAmount) return false
-        
+
         const wethExceeded = Number(wethAmount) > Number(MOCK_BALANCES.WETH.formatted)
         const ethForGasExceeded = !hasEnoughEthForGas
 
@@ -268,7 +248,7 @@ export function TokenSwap() {
 
     const getErrorMessage = () => {
         if (!wethAmount || !daiAmount) return null
-        
+
         if (Number(wethAmount) > Number(MOCK_BALANCES.WETH.formatted)) {
             return "Insufficient WETH balance"
         }
@@ -281,19 +261,19 @@ export function TokenSwap() {
     const handleSwap = async () => {
         if (!address || !wethAmount || !daiAmount) return
         if (!hasEnoughEthForGas) {
-            console.error('Insufficient ETH for gas')
+            console.error("Insufficient ETH for gas")
             return
         }
 
         setIsSwapSigning(true)
         try {
-            await signMessageAsync({ 
-                message: `I want to swap ${wethAmount} WETH for ${daiAmount} DAI (Gas fee: ${estimatedGasFee} ETH) at ${new Date().toISOString()}` 
+            await signMessageAsync({
+                message: `I want to swap ${wethAmount} WETH for ${daiAmount} DAI (Gas fee: ${estimatedGasFee} ETH) at ${new Date().toISOString()}`,
             })
             setIsSwapped(true)
             setTimeout(() => setIsSwapped(false), 3000)
         } catch (error) {
-            console.error('Error signing swap message:', error)
+            console.error("Error signing swap message:", error)
         } finally {
             setIsSwapSigning(false)
         }
@@ -393,10 +373,8 @@ export function TokenSwap() {
                         <Loader2 className="h-3 w-3 animate-spin" />
                         Fetching price...
                     </div>
-                ) : exchangeRate && (
-                    <div className="px-3 py-1 bg-muted/50 rounded-full inline-block">
-                        {exchangeRate}
-                    </div>
+                ) : (
+                    exchangeRate && <div className="px-3 py-1 bg-muted/50 rounded-full inline-block">{exchangeRate}</div>
                 )}
             </div>
 
@@ -407,12 +385,12 @@ export function TokenSwap() {
                 </div>
             )}
 
-            <Button 
+            <Button
                 onClick={handleSwap}
                 disabled={!wethAmount || isSwapping || isExceedingBalance()}
                 className={cn(
                     "w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-lg h-12 rounded-xl shadow-lg",
-                    isExceedingBalance() && "opacity-50 cursor-not-allowed"
+                    isExceedingBalance() && "opacity-50 cursor-not-allowed",
                 )}
             >
                 {isSwapping ? (
@@ -430,9 +408,7 @@ export function TokenSwap() {
             {isSwapped && (
                 <div className="text-sm text-green-500 text-center bg-green-500/10 px-3 py-2 rounded-lg">
                     Successfully signed swap message!
-                    <div className="text-xs mt-1">
-                        Gas fee: {estimatedGasFee} ETH
-                    </div>
+                    <div className="text-xs mt-1">Gas fee: {estimatedGasFee} ETH</div>
                 </div>
             )}
         </div>
