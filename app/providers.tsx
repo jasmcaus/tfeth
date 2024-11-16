@@ -1,32 +1,35 @@
 "use client"
 
-import { configureChains, createConfig, WagmiConfig } from "wagmi"
-import { mainnet } from "wagmi/chains"
-import { EthereumClient, w3mConnectors, w3mProvider } from "@web3modal/ethereum"
-import { Web3Modal } from "@web3modal/react"
-import { ThemeProvider } from "next-themes"
-import { Toaster } from "@/components/ui/toaster"
+import * as React from "react"
+import {
+    RainbowKitProvider,
+    getDefaultConfig,
+    darkTheme,
+} from "@rainbow-me/rainbowkit"
+import { WagmiProvider } from "wagmi"
+import { mainnet, polygon, optimism, arbitrum } from "wagmi/chains"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-const projectId = "YOUR_WALLET_CONNECT_PROJECT_ID"
-
-const { chains, publicClient } = configureChains([mainnet], [w3mProvider({ projectId })])
-
-const wagmiConfig = createConfig({
-    autoConnect: true,
-    connectors: w3mConnectors({ projectId, chains }),
-    publicClient,
+const config = getDefaultConfig({
+    appName: "Web3 Wallet Interface",
+    projectId: "YOUR_PROJECT_ID",
+    chains: [mainnet, polygon, optimism, arbitrum],
+    ssr: true,
 })
 
-const ethereumClient = new EthereumClient(wagmiConfig, chains)
+const queryClient = new QueryClient()
 
 export function Providers({ children }: { children: React.ReactNode }) {
+    const [mounted, setMounted] = React.useState(false)
+    React.useEffect(() => setMounted(true), [])
+
     return (
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <WagmiConfig config={wagmiConfig}>
-                {children}
-                <Toaster />
-            </WagmiConfig>
-            <Web3Modal projectId={projectId} ethereumClient={ethereumClient} />
-        </ThemeProvider>
+        <WagmiProvider config={config}>
+            <QueryClientProvider client={queryClient}>
+                <RainbowKitProvider theme={darkTheme()}>
+                    {mounted && children}
+                </RainbowKitProvider>
+            </QueryClientProvider>
+        </WagmiProvider>
     )
 }

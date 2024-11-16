@@ -1,38 +1,35 @@
 "use client"
 
 import * as React from "react"
-import { RainbowKitProvider, getDefaultWallets, darkTheme } from "@rainbow-me/rainbowkit"
-import { configureChains, createConfig, WagmiConfig } from "wagmi"
+import {
+    RainbowKitProvider,
+    getDefaultConfig,
+    darkTheme,
+} from "@rainbow-me/rainbowkit"
+import { WagmiProvider } from "wagmi"
 import { mainnet, polygon, optimism, arbitrum } from "wagmi/chains"
-import { publicProvider } from "wagmi/providers/public"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-const { chains, publicClient, webSocketPublicClient } = configureChains(
-    [mainnet, polygon, optimism, arbitrum],
-    [publicProvider()],
-)
-
-const { connectors } = getDefaultWallets({
-    appName: "Your App Name",
+const config = getDefaultConfig({
+    appName: "Web3 Wallet Interface",
     projectId: "YOUR_PROJECT_ID", // Get this from WalletConnect Cloud
-    chains,
+    chains: [mainnet, polygon, optimism, arbitrum],
+    ssr: true,
 })
 
-const wagmiConfig = createConfig({
-    autoConnect: true,
-    connectors,
-    publicClient,
-    webSocketPublicClient,
-})
+const queryClient = new QueryClient()
 
 export function Providers({ children }: { children: React.ReactNode }) {
     const [mounted, setMounted] = React.useState(false)
     React.useEffect(() => setMounted(true), [])
 
     return (
-        <WagmiConfig config={wagmiConfig}>
-            <RainbowKitProvider chains={chains} theme={darkTheme()}>
-                {mounted && children}
-            </RainbowKitProvider>
-        </WagmiConfig>
+        <WagmiProvider config={config}>
+            <QueryClientProvider client={queryClient}>
+                <RainbowKitProvider theme={darkTheme()}>
+                    {mounted && children}
+                </RainbowKitProvider>
+            </QueryClientProvider>
+        </WagmiProvider>
     )
 }
