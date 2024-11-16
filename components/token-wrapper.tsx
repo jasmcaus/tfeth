@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils"
 
 // Mock initial balance
 const MOCK_ETH_BALANCE = {
-    formatted: "2.5",
-    value: BigInt("2500000000000000000"), // 2.5 ETH
+    formatted: "25",
+    value: BigInt("25000000000000000000"), // 25 ETH
 }
 
 export function TokenWrapper() {

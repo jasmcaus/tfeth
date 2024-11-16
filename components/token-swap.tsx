@@ -2,15 +2,55 @@
 
 import { useState, useEffect } from "react"
 import { parseEther, formatEther } from "viem"
-import { useAccount, useSignMessage, usePublicClient } from "wagmi"
+import { useAccount, useSignMessage, usePublicClient, useFeeData, useSimulateContract } from "wagmi"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2, ArrowDownIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useDebounce } from "@/hooks/use-debounce"
-import { Token, CurrencyAmount, TradeType } from "@uniswap/sdk-core"
-import { Pair, Route, Trade } from "@uniswap/v2-sdk"
-import { mainnet } from "wagmi/chains"
+import { Token, CurrencyAmount, TradeType } from '@uniswap/sdk-core'
+import { Pair, Route, Trade } from '@uniswap/v2-sdk'
+import { mainnet } from 'wagmi/chains'
+
+// Contract addresses and pair address
+const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+const DAI_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+const UNISWAP_V2_ROUTER_ADDRESS = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+const WETH_DAI_PAIR_ADDRESS = "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
+
+// Token Definitions
+const WETH_TOKEN = new Token(
+    mainnet.id,
+    WETH_ADDRESS,
+    18,
+    "WETH",
+    "Wrapped Ether"
+)
+
+const DAI_TOKEN = new Token(
+    mainnet.id,
+    DAI_ADDRESS,
+    18,
+    "DAI",
+    "Dai Stablecoin"
+)
+
+// Router ABI (only the functions we need)
+const ROUTER_ABI = [
+    {
+        inputs: [
+            { name: "amountIn", type: "uint256" },
+            { name: "amountOutMin", type: "uint256" },
+            { name: "path", type: "address[]" },
+            { name: "to", type: "address" },
+            { name: "deadline", type: "uint256" }
+        ],
+        name: "swapExactTokensForTokens",
+        outputs: [{ name: "amounts", type: "uint256[]" }],
+        stateMutability: "nonpayable",
+        type: "function"
+    }
+] as const
 
 const MOCK_BALANCES = {
     WETH: {
@@ -21,41 +61,129 @@ const MOCK_BALANCES = {
         formatted: "5000",
         value: BigInt("5000000000000000000000"), // 5000 DAI
     },
+    ETH: {
+        formatted: "3.0",
+        value: BigInt("3000000000000000000"), // 3.0 ETH for gas
+    }
 }
-
-// Token Definitions
-const WETH = new Token(mainnet.id, "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", 18, "WETH", "Wrapped Ether")
-
-const DAI = new Token(mainnet.id, "0x6B175474E89094C44Da98b954EedeAC495271d0F", 18, "DAI", "Dai Stablecoin")
-
-// WETH-DAI pair address on Uniswap V2
-const PAIR_ADDRESS = "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
 
 export function TokenSwap() {
     const [wethAmount, setWethAmount] = useState("")
     const [daiAmount, setDaiAmount] = useState("")
     const [activeInput, setActiveInput] = useState<"WETH" | "DAI" | null>(null)
     const [isSwapped, setIsSwapped] = useState(false)
+    const [isSwapSigning, setIsSwapSigning] = useState(false)
+    const [estimatedGasFee, setEstimatedGasFee] = useState<string | null>(null)
+    const [hasEnoughEthForGas, setHasEnoughEthForGas] = useState(true)
     const [isLoadingPrice, setIsLoadingPrice] = useState(false)
     const [exchangeRate, setExchangeRate] = useState<string | null>(null)
+    const [estimatedGas, setEstimatedGas] = useState<bigint | null>(null)
+    const [gasPrice, setGasPrice] = useState<bigint | null>(null)
 
     const { address } = useAccount()
     const publicClient = usePublicClient()
 
     const debouncedWethAmount = useDebounce(wethAmount, 500)
+
+    // Fetch gas price
+    useEffect(() => {
+        const fetchGasPrice = async () => {
+            try {
+                const price = await publicClient?.getGasPrice()
+                console.log("GAS PRICE", price)
+                setGasPrice(price!)
+            } catch (error) {
+                console.error('Error fetching gas price:', error)
+                setGasPrice(null)
+            }
+        }
+
+        fetchGasPrice()
+        // Refresh gas price every 10 seconds
+        const interval = setInterval(fetchGasPrice, 10000)
+        return () => clearInterval(interval)
+    }, [publicClient])
+
+    // Estimate gas using public client
+    useEffect(() => {
+        const estimateGas = async () => {
+            if (!wethAmount || !Number(wethAmount) || !address) {
+                setEstimatedGas(null)
+                return
+            }
+
+            try {
+                const gasEstimate = await publicClient?.estimateContractGas({
+                    address: WETH_ADDRESS,
+                    abi: [{
+                        constant: false,
+                        inputs: [
+                            { name: "spender", type: "address" },
+                            { name: "value", type: "uint256" }
+                        ],
+                        name: "approve",
+                        outputs: [{ name: "", type: "bool" }],
+                        payable: false,
+                        stateMutability: "nonpayable",
+                        type: "function"
+                    }] as const,
+                    functionName: 'approve',
+                    args: [
+                        UNISWAP_V2_ROUTER_ADDRESS,
+                        parseEther(wethAmount)
+                    ],
+                    account: address,
+                })
+
+                setEstimatedGas(gasEstimate!)
+            } catch (error) {
+                console.error('Error estimating gas:', error)
+                setEstimatedGas(null)
+            }
+        }
+
+        estimateGas()
+    }, [wethAmount, address, publicClient])
+
+    // Calculate gas fee whenever estimate or gas price changes
+    useEffect(() => {
+        console.log("ESTIMATED GAS", estimatedGas)
+        console.log("GAS PRICE", gasPrice)
+        if (!estimatedGas || !gasPrice) {
+            setEstimatedGasFee(null)
+            return
+        }
+
+        try {
+            // Add extra gas for the actual swap (approximately 200,000 more)
+            const totalGas = estimatedGas + BigInt(200000)
+            const gasFee = totalGas * gasPrice
+            const gasFeeInEth = formatEther(gasFee)
+            console.error("GAS FEE IN ETH", gasFeeInEth)
+            setEstimatedGasFee(gasFeeInEth)
+
+            // Check if user has enough ETH for gas
+            const hasEnough = Number(MOCK_BALANCES.ETH.formatted) >= Number(gasFeeInEth)
+            setHasEnoughEthForGas(hasEnough)
+        } catch (error) {
+            console.error('Error calculating gas fee:', error)
+            setEstimatedGasFee(null)
+        }
+    }, [estimatedGas, gasPrice])
+
     const debouncedDaiAmount = useDebounce(daiAmount, 500)
 
     // Fetch price using Uniswap SDK
     useEffect(() => {
         const fetchPrice = async () => {
             if (!debouncedWethAmount && !debouncedDaiAmount) return
-
+            
             try {
                 setIsLoadingPrice(true)
 
                 // Get reserves from the pair contract
-                const [reserve0, reserve1] = (await publicClient?.readContract({
-                    address: PAIR_ADDRESS,
+                const [reserve0, reserve1] = await publicClient?.readContract({
+                    address: WETH_DAI_PAIR_ADDRESS,
                     abi: [
                         {
                             constant: true,
@@ -64,49 +192,56 @@ export function TokenSwap() {
                             outputs: [
                                 { name: "_reserve0", type: "uint112" },
                                 { name: "_reserve1", type: "uint112" },
-                                { name: "_blockTimestampLast", type: "uint32" },
+                                { name: "_blockTimestampLast", type: "uint32" }
                             ],
-                            type: "function",
-                        },
+                            type: "function"
+                        }
                     ],
                     functionName: "getReserves",
-                })) as [bigint, bigint, number]
+                }) as [bigint, bigint, number]
 
                 // Create pair instance
                 const pair = new Pair(
-                    CurrencyAmount.fromRawAmount(DAI, reserve0.toString()),
-                    CurrencyAmount.fromRawAmount(WETH, reserve1.toString()),
+                    CurrencyAmount.fromRawAmount(DAI_TOKEN, reserve0.toString()),
+                    CurrencyAmount.fromRawAmount(WETH_TOKEN, reserve1.toString())
                 )
 
                 if (activeInput === "WETH" && debouncedWethAmount) {
                     // Create route
-                    const route = new Route([pair], WETH, DAI)
-
+                    const route = new Route([pair], WETH_TOKEN, DAI_TOKEN)
+                    
                     // Create trade
                     const trade = new Trade(
                         route,
-                        CurrencyAmount.fromRawAmount(WETH, parseEther(debouncedWethAmount).toString()),
-                        TradeType.EXACT_INPUT,
+                        CurrencyAmount.fromRawAmount(
+                            WETH_TOKEN,
+                            parseEther(debouncedWethAmount).toString()
+                        ),
+                        TradeType.EXACT_INPUT
                     )
 
                     setDaiAmount(trade.outputAmount.toSignificant(6))
                     setExchangeRate(`1 WETH = ${route.midPrice.toSignificant(6)} DAI`)
-                } else if (activeInput === "DAI" && debouncedDaiAmount) {
+                }
+                else if (activeInput === "DAI" && debouncedDaiAmount) {
                     // Create route
-                    const route = new Route([pair], DAI, WETH)
-
+                    const route = new Route([pair], DAI_TOKEN, WETH_TOKEN)
+                    
                     // Create trade
                     const trade = new Trade(
                         route,
-                        CurrencyAmount.fromRawAmount(DAI, parseEther(debouncedDaiAmount).toString()),
-                        TradeType.EXACT_INPUT,
+                        CurrencyAmount.fromRawAmount(
+                            DAI_TOKEN,
+                            parseEther(debouncedDaiAmount).toString()
+                        ),
+                        TradeType.EXACT_INPUT
                     )
 
                     setWethAmount(trade.outputAmount.toSignificant(6))
                     setExchangeRate(`1 DAI = ${route.midPrice.toSignificant(6)} WETH`)
                 }
             } catch (error) {
-                console.error("Error fetching price:", error)
+                console.error('Error fetching price:', error)
             } finally {
                 setIsLoadingPrice(false)
             }
@@ -124,31 +259,47 @@ export function TokenSwap() {
 
     const isExceedingBalance = () => {
         if (!wethAmount || !daiAmount) return false
-        return Number(wethAmount) > Number(MOCK_BALANCES.WETH.formatted)
+        
+        const wethExceeded = Number(wethAmount) > Number(MOCK_BALANCES.WETH.formatted)
+        const ethForGasExceeded = !hasEnoughEthForGas
+
+        return wethExceeded || ethForGasExceeded
     }
 
-    const getBalanceErrorMessage = () => {
+    const getErrorMessage = () => {
         if (!wethAmount || !daiAmount) return null
+        
         if (Number(wethAmount) > Number(MOCK_BALANCES.WETH.formatted)) {
             return "Insufficient WETH balance"
+        }
+        if (!hasEnoughEthForGas) {
+            return `Insufficient ETH for gas (${estimatedGasFee} ETH needed)`
         }
         return null
     }
 
     const handleSwap = async () => {
         if (!address || !wethAmount || !daiAmount) return
+        if (!hasEnoughEthForGas) {
+            console.error('Insufficient ETH for gas')
+            return
+        }
+
+        setIsSwapSigning(true)
         try {
-            await signMessageAsync({
-                message: `I want to swap ${wethAmount} WETH for ${daiAmount} DAI at ${new Date().toISOString()}`,
+            await signMessageAsync({ 
+                message: `I want to swap ${wethAmount} WETH for ${daiAmount} DAI (Gas fee: ${estimatedGasFee} ETH) at ${new Date().toISOString()}` 
             })
             setIsSwapped(true)
             setTimeout(() => setIsSwapped(false), 3000)
         } catch (error) {
-            console.error("Error signing message:", error)
+            console.error('Error signing swap message:', error)
+        } finally {
+            setIsSwapSigning(false)
         }
     }
 
-    const isSwapping = status === "pending"
+    const isSwapping = isSwapSigning
 
     return (
         <div className="rounded-xl border bg-gradient-to-b from-muted/50 to-muted p-6 shadow-xl space-y-4">
@@ -242,17 +393,26 @@ export function TokenSwap() {
                         <Loader2 className="h-3 w-3 animate-spin" />
                         Fetching price...
                     </div>
-                ) : (
-                    exchangeRate && <div className="px-3 py-1 bg-muted/50 rounded-full inline-block">{exchangeRate}</div>
+                ) : exchangeRate && (
+                    <div className="px-3 py-1 bg-muted/50 rounded-full inline-block">
+                        {exchangeRate}
+                    </div>
                 )}
             </div>
 
-            <Button
+            {/* Gas Fee Display - Only show when we have a value */}
+            {estimatedGasFee && wethAmount && Number(wethAmount) > 0 && (
+                <div className="text-sm text-muted-foreground text-center">
+                    Estimated Gas Fee: {Number(estimatedGasFee).toFixed(6)} ETH
+                </div>
+            )}
+
+            <Button 
                 onClick={handleSwap}
                 disabled={!wethAmount || isSwapping || isExceedingBalance()}
                 className={cn(
                     "w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-lg h-12 rounded-xl shadow-lg",
-                    isExceedingBalance() && "opacity-50 cursor-not-allowed",
+                    isExceedingBalance() && "opacity-50 cursor-not-allowed"
                 )}
             >
                 {isSwapping ? (
@@ -261,7 +421,7 @@ export function TokenSwap() {
                         Signing...
                     </>
                 ) : isExceedingBalance() ? (
-                    "Insufficient Balance"
+                    getErrorMessage() || "Insufficient Balance"
                 ) : (
                     "Swap"
                 )}
@@ -270,6 +430,9 @@ export function TokenSwap() {
             {isSwapped && (
                 <div className="text-sm text-green-500 text-center bg-green-500/10 px-3 py-2 rounded-lg">
                     Successfully signed swap message!
+                    <div className="text-xs mt-1">
+                        Gas fee: {estimatedGasFee} ETH
+                    </div>
                 </div>
             )}
         </div>
