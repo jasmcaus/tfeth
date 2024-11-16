@@ -78,7 +78,6 @@ export function TokenSwap() {
         const fetchGasPrice = async () => {
             try {
                 const price = await publicClient?.getGasPrice()
-                console.log("GAS PRICE", price)
                 setGasPrice(price!)
             } catch (error) {
                 console.error("Error fetching gas price:", error)
@@ -134,8 +133,6 @@ export function TokenSwap() {
 
     // Calculate gas fee whenever estimate or gas price changes
     useEffect(() => {
-        console.log("ESTIMATED GAS", estimatedGas)
-        console.log("GAS PRICE", gasPrice)
         if (!estimatedGas || !gasPrice) {
             setEstimatedGasFee(null)
             return
