@@ -233,7 +233,19 @@ export function TokenSwap() {
     const { signMessageAsync, status } = useSignMessage()
 
     const handleMaxAmount = () => {
-        setWethAmount(MOCK_BALANCES.WETH.formatted)
+        if (!estimatedGasFee) return;
+
+        // Convert gas fee to same precision as balance
+        const gasFeeInEth = Number(estimatedGasFee)
+        const maxAmount = Number(MOCK_BALANCES.WETH.formatted)
+
+        // Calculate max amount minus gas fee
+        const maxWithGas = (maxAmount - gasFeeInEth).toFixed(6)
+        
+        // Ensure we don't set a negative value
+        const finalAmount = Number(maxWithGas) > 0 ? maxWithGas : "0"
+        
+        setWethAmount(finalAmount)
         setActiveInput("WETH")
     }
 
