@@ -41,8 +41,8 @@ function useCarousel() {
     return context
 }
 
-const Carousel: ForwardRefExoticComponent<HTMLAttributes<HTMLDivElement> & CarouselProps & RefAttributes<HTMLDivElement>> = forwardRef(
-    ({ orientation = "horizontal", opts, setApi, plugins, className, children, ...props }, ref) => {
+const Carousel: ForwardRefExoticComponent<HTMLAttributes<HTMLDivElement> & CarouselProps & RefAttributes<HTMLDivElement>> =
+    forwardRef(({ orientation = "horizontal", opts, setApi, plugins, className, children, ...props }, ref) => {
         const [carouselRef, api] = useEmblaCarousel(
             {
                 ...opts,
@@ -130,8 +130,7 @@ const Carousel: ForwardRefExoticComponent<HTMLAttributes<HTMLDivElement> & Carou
                 </div>
             </CarouselContext.Provider>
         )
-    },
-)
+    })
 Carousel.displayName = "Carousel"
 
 const CarouselContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => {
@@ -165,8 +164,8 @@ const CarouselItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
 CarouselItem.displayName = "CarouselItem"
 
 type ButtonProps = {
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
-  size?: "default" | "sm" | "lg" | "icon"
+    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+    size?: "default" | "sm" | "lg" | "icon"
 } & React.ButtonHTMLAttributes<HTMLButtonElement>
 
 const CarouselPrevious = React.forwardRef<HTMLButtonElement, ButtonProps>(

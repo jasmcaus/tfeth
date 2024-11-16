@@ -1,7 +1,7 @@
 "use client"
 
-import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function WalletHeader() {
     return (
@@ -10,4 +10,4 @@ export function WalletHeader() {
             <ConnectButton />
         </div>
     )
-} 
+}

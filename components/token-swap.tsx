@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { parseEther, formatEther, isAddress } from "viem"
-import { useAccount, useBalance, useWriteContract, useReadContract, useWaitForTransactionReceipt, useSimulateContract } from "wagmi"
+import {
+    useAccount,
+    useBalance,
+    useWriteContract,
+    useReadContract,
+    useWaitForTransactionReceipt,
+    useSimulateContract,
+} from "wagmi"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { UNISWAP_V2_ROUTER_ABI, UNISWAP_V2_ROUTER_ADDRESS, WETH_ADDRESS } from "@/constants/contracts"
@@ -21,17 +28,17 @@ export function TokenSwap() {
     // Get output token balance
     const { data: tokenBalance } = useBalance({
         address,
-        token: isAddress(tokenAddress) ? tokenAddress as `0x${string}` : undefined,
+        token: isAddress(tokenAddress) ? (tokenAddress as `0x${string}`) : undefined,
     })
 
     // Get amount out
     const { data: amountOut } = useReadContract({
         address: UNISWAP_V2_ROUTER_ADDRESS,
         abi: UNISWAP_V2_ROUTER_ABI,
-        functionName: 'getAmountsOut',
+        functionName: "getAmountsOut",
         args: [
             parseEther(amount || "0"),
-            [WETH_ADDRESS, isAddress(tokenAddress) ? tokenAddress as `0x${string}` : WETH_ADDRESS]
+            [WETH_ADDRESS, isAddress(tokenAddress) ? (tokenAddress as `0x${string}`) : WETH_ADDRESS],
         ],
     })
 
@@ -39,14 +46,17 @@ export function TokenSwap() {
     const { data: simulation } = useSimulateContract({
         address: UNISWAP_V2_ROUTER_ADDRESS,
         abi: UNISWAP_V2_ROUTER_ABI,
-        functionName: 'swapExactTokensForTokens',
-        args: address && tokenAddress && isAddress(tokenAddress) ? [
-            parseEther(amount || "0"),
-            BigInt(0),
-            [WETH_ADDRESS, tokenAddress as `0x${string}`],
-            address,
-            BigInt(Math.floor(Date.now() / 1000) + 60 * 20),
-        ] : undefined,
+        functionName: "swapExactTokensForTokens",
+        args:
+            address && tokenAddress && isAddress(tokenAddress)
+                ? [
+                      parseEther(amount || "0"),
+                      BigInt(0),
+                      [WETH_ADDRESS, tokenAddress as `0x${string}`],
+                      address,
+                      BigInt(Math.floor(Date.now() / 1000) + 60 * 20),
+                  ]
+                : undefined,
         account: address,
     })
 
@@ -60,9 +70,9 @@ export function TokenSwap() {
     // Log when balance changes
     useEffect(() => {
         if (wethBalance) {
-            console.log("WETH Balance updated:", formatEther(wethBalance.value));
+            console.log("WETH Balance updated:", formatEther(wethBalance.value))
         }
-    }, [wethBalance]);
+    }, [wethBalance])
 
     // Swap tokens
     const { writeContract, data: hash } = useWriteContract()
@@ -78,7 +88,7 @@ export function TokenSwap() {
             writeContract({
                 address: UNISWAP_V2_ROUTER_ADDRESS,
                 abi: UNISWAP_V2_ROUTER_ABI,
-                functionName: 'swapExactTokensForTokens',
+                functionName: "swapExactTokensForTokens",
                 args: [
                     parseEther(amount),
                     BigInt(0),
@@ -88,7 +98,7 @@ export function TokenSwap() {
                 ],
             })
         } catch (error) {
-            console.error('Error swapping tokens:', error)
+            console.error("Error swapping tokens:", error)
         }
     }
 
@@ -98,9 +108,7 @@ export function TokenSwap() {
                 <h2 className="text-xl font-bold">Swap WETH to Token</h2>
                 <div className="flex items-center justify-between text-sm">
                     <span>WETH Balance: {wethBalance?.formatted || "0"} WETH</span>
-                    {tokenBalance && (
-                        <span>Token Balance: {tokenBalance.formatted}</span>
-                    )}
+                    {tokenBalance && <span>Token Balance: {tokenBalance.formatted}</span>}
                 </div>
             </div>
 
@@ -122,10 +130,7 @@ export function TokenSwap() {
                         min="0"
                         step="0.000001"
                     />
-                    <div 
-                        className="absolute inset-y-0 right-0 flex items-center mr-2"
-                        style={{ pointerEvents: 'auto' }}
-                    >
+                    <div className="absolute inset-y-0 right-0 flex items-center mr-2" style={{ pointerEvents: "auto" }}>
                         <button
                             type="button"
                             onClick={handleMaxAmount}
@@ -145,12 +150,10 @@ export function TokenSwap() {
             )}
 
             {amountOut && (
-                <div className="text-sm text-muted-foreground">
-                    You will receive: {formatEther(amountOut[1])} Tokens
-                </div>
+                <div className="text-sm text-muted-foreground">You will receive: {formatEther(amountOut[1])} Tokens</div>
             )}
 
-            <Button 
+            <Button
                 onClick={handleSwap}
                 disabled={!amount || !tokenAddress || !isAddress(tokenAddress) || isSwapping}
                 className="w-full"
@@ -158,11 +161,7 @@ export function TokenSwap() {
                 {isSwapping ? "Swapping..." : "Swap WETH to Token"}
             </Button>
 
-            {isSwapped && (
-                <div className="text-sm text-green-500">
-                    Successfully swapped {amount} WETH!
-                </div>
-            )}
+            {isSwapped && <div className="text-sm text-green-500">Successfully swapped {amount} WETH!</div>}
         </div>
     )
 }

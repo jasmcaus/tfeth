@@ -17,7 +17,7 @@ const inter = Inter({ subsets: ["latin"] })
 const config = createConfig({
     chains: [mainnet],
     transports: {
-        [mainnet.id]: http()
+        [mainnet.id]: http(),
     },
 })
 
@@ -32,9 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         <QueryClientProvider client={queryClient}>
                             <RainbowKitThemeProvider>
                                 <div className="min-h-screen bg-background font-sans antialiased">
-                                    <div className="relative flex min-h-screen flex-col">
-                                        {children}
-                                    </div>
+                                    <div className="relative flex min-h-screen flex-col">{children}</div>
                                 </div>
                             </RainbowKitThemeProvider>
                         </QueryClientProvider>
@@ -47,12 +45,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 function RainbowKitThemeProvider({ children }: { children: React.ReactNode }) {
     const { theme } = useTheme()
-    
-    return (
-        <RainbowKitProvider
-            theme={theme === "dark" ? darkTheme() : lightTheme()}
-        >
-            {children}
-        </RainbowKitProvider>
-    )
+
+    return <RainbowKitProvider theme={theme === "dark" ? darkTheme() : lightTheme()}>{children}</RainbowKitProvider>
 }

@@ -10,7 +10,7 @@ import { WETH_ABI, WETH_ADDRESS } from "@/constants/contracts"
 export function TokenWrapper() {
     const [amount, setAmount] = useState("")
     const { address } = useAccount()
-    
+
     // Get ETH balance
     const { data: ethBalance } = useBalance({
         address,
@@ -26,7 +26,7 @@ export function TokenWrapper() {
     const { data: simulation } = useSimulateContract({
         address: WETH_ADDRESS,
         abi: WETH_ABI,
-        functionName: 'deposit',
+        functionName: "deposit",
         value: parseEther("0.1"), // Use a small amount for initial gas estimate
         account: address,
     })
@@ -54,11 +54,11 @@ export function TokenWrapper() {
             writeContract({
                 address: WETH_ADDRESS,
                 abi: WETH_ABI,
-                functionName: 'deposit',
+                functionName: "deposit",
                 value,
             })
         } catch (error) {
-            console.error('Error wrapping ETH:', error)
+            console.error("Error wrapping ETH:", error)
         }
     }
 
@@ -84,10 +84,7 @@ export function TokenWrapper() {
                         min="0"
                         step="0.000001"
                     />
-                    <div 
-                        className="absolute inset-y-0 right-0 flex items-center mr-2"
-                        style={{ pointerEvents: 'auto' }}
-                    >
+                    <div className="absolute inset-y-0 right-0 flex items-center mr-2" style={{ pointerEvents: "auto" }}>
                         <button
                             type="button"
                             onClick={handleMaxAmount}
@@ -98,10 +95,7 @@ export function TokenWrapper() {
                         </button>
                     </div>
                 </div>
-                <Button 
-                    onClick={handleWrap}
-                    disabled={!amount || isWrapping}
-                >
+                <Button onClick={handleWrap} disabled={!amount || isWrapping}>
                     {isWrapping ? "Wrapping..." : "Wrap ETH"}
                 </Button>
             </div>
@@ -112,11 +106,7 @@ export function TokenWrapper() {
                 </div>
             )}
 
-            {isWrapped && (
-                <div className="text-sm text-green-500">
-                    Successfully wrapped {amount} ETH to WETH!
-                </div>
-            )}
+            {isWrapped && <div className="text-sm text-green-500">Successfully wrapped {amount} ETH to WETH!</div>}
         </div>
     )
-} 
+}
