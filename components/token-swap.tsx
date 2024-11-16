@@ -229,17 +229,18 @@ export function TokenSwap() {
 
     const { signMessageAsync, status } = useSignMessage()
 
+    // Get balances based on connection status
+    const wethBalance = address ? MOCK_BALANCES.WETH.formatted : "0"
+    const daiBalance = address ? MOCK_BALANCES.DAI.formatted : "0"
+    const ethBalance = address ? MOCK_BALANCES.ETH.formatted : "0"
+
     const handleMaxAmount = () => {
-        if (!estimatedGasFee) return;
+        if (!address || !estimatedGasFee) return;
 
-        // Convert gas fee to same precision as balance
         const gasFeeInEth = Number(estimatedGasFee)
-        const maxAmount = Number(MOCK_BALANCES.WETH.formatted)
+        const maxAmount = Number(wethBalance)
 
-        // Calculate max amount minus gas fee
         const maxWithGas = (maxAmount - gasFeeInEth).toFixed(6)
-        
-        // Ensure we don't set a negative value
         const finalAmount = Number(maxWithGas) > 0 ? maxWithGas : "0"
         
         setWethAmount(finalAmount)
@@ -248,17 +249,13 @@ export function TokenSwap() {
 
     const isExceedingBalance = () => {
         if (!wethAmount || !daiAmount) return false
-
-        const wethExceeded = Number(wethAmount) > Number(MOCK_BALANCES.WETH.formatted)
-        const ethForGasExceeded = !hasEnoughEthForGas
-
-        return wethExceeded || ethForGasExceeded
+        return Number(wethAmount) > Number(wethBalance)
     }
 
     const getErrorMessage = () => {
         if (!wethAmount || !daiAmount) return null
-
-        if (Number(wethAmount) > Number(MOCK_BALANCES.WETH.formatted)) {
+        if (!address) return "Connect wallet to swap"
+        if (Number(wethAmount) > Number(wethBalance)) {
             return "Insufficient WETH balance"
         }
         if (!hasEnoughEthForGas) {
@@ -307,7 +304,7 @@ export function TokenSwap() {
                             <span className="font-semibold text-base">WETH</span>
                         </div>
                         <div className="text-sm text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg">
-                            Balance: {MOCK_BALANCES.WETH.formatted}
+                            Balance: {wethBalance}
                         </div>
                     </div>
                     <div className="relative">
@@ -356,7 +353,7 @@ export function TokenSwap() {
                             <span className="font-semibold text-base">DAI</span>
                         </div>
                         <div className="text-sm text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg">
-                            Balance: {MOCK_BALANCES.DAI.formatted}
+                            Balance: {daiBalance}
                         </div>
                     </div>
                     <Input
@@ -420,6 +417,12 @@ export function TokenSwap() {
                     <div className="text-xs mt-1">Gas fee: {estimatedGasFee} ETH</div>
                 </div>
             )}
+
+            {/* Update balance displays */}
+            <div className="flex items-center justify-between text-sm">
+                <span>WETH Balance: {wethBalance} WETH</span>
+                <span>DAI Balance: {daiBalance} DAI</span>
+            </div>
         </div>
     )
 }
