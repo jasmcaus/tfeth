@@ -235,14 +235,14 @@ export function TokenSwap() {
     const ethBalance = address ? MOCK_BALANCES.ETH.formatted : "0"
 
     const handleMaxAmount = () => {
-        if (!address || !estimatedGasFee) return;
+        if (!address || !estimatedGasFee) return
 
         const gasFeeInEth = Number(estimatedGasFee)
         const maxAmount = Number(wethBalance)
 
         const maxWithGas = (maxAmount - gasFeeInEth).toFixed(6)
         const finalAmount = Number(maxWithGas) > 0 ? maxWithGas : "0"
-        
+
         setWethAmount(finalAmount)
         setActiveInput("WETH")
     }

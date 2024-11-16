@@ -37,19 +37,19 @@ export function TokenWrapper() {
     const handleWrap = async () => {
         if (!address || !amount || isExceedingBalance()) return
         try {
-            await signMessageAsync({ 
-                message: `I want to wrap ${amount} ETH to WETH at ${new Date().toISOString()}` 
+            await signMessageAsync({
+                message: `I want to wrap ${amount} ETH to WETH at ${new Date().toISOString()}`,
             })
             const newBalance = (Number(simulatedWethBalance) + Number(amount)).toFixed(4)
             setSimulatedWethBalance(newBalance)
             setIsSuccess(true)
             setTimeout(() => setIsSuccess(false), 3000)
         } catch (error) {
-            console.error('Error signing wrap message:', error)
+            console.error("Error signing wrap message:", error)
         }
     }
 
-    const isWrapping = status === 'pending'
+    const isWrapping = status === "pending"
 
     return (
         <div className="rounded-lg border p-4 space-y-4">
@@ -73,10 +73,7 @@ export function TokenWrapper() {
                         min="0"
                         step="0.000001"
                     />
-                    <div 
-                        className="absolute inset-y-0 right-0 flex items-center mr-2"
-                        style={{ pointerEvents: 'auto' }}
-                    >
+                    <div className="absolute inset-y-0 right-0 flex items-center mr-2" style={{ pointerEvents: "auto" }}>
                         <button
                             type="button"
                             onClick={handleMaxAmount}
@@ -87,12 +84,10 @@ export function TokenWrapper() {
                         </button>
                     </div>
                 </div>
-                <Button 
+                <Button
                     onClick={handleWrap}
                     disabled={!amount || isWrapping || isExceedingBalance()}
-                    className={cn(
-                        isExceedingBalance() && "opacity-50 cursor-not-allowed"
-                    )}
+                    className={cn(isExceedingBalance() && "opacity-50 cursor-not-allowed")}
                 >
                     {isWrapping ? (
                         <>
@@ -107,12 +102,7 @@ export function TokenWrapper() {
                 </Button>
             </div>
 
-
-            {isSuccess && (
-                <div className="text-sm text-green-500">
-                    Successfully wrapped {amount} ETH to WETH!
-                </div>
-            )}
+            {isSuccess && <div className="text-sm text-green-500">Successfully wrapped {amount} ETH to WETH!</div>}
         </div>
     )
 }
