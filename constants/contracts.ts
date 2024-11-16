@@ -11,7 +11,15 @@ export const WETH_ABI = [
         "stateMutability": "payable",
         "type": "function"
     },
-    // Add other necessary ABI entries
+    {
+        "constant": true,
+        "inputs": [{"name": "", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    }
 ] as const
 
 export const UNISWAP_V2_ROUTER_ABI = [

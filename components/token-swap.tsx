@@ -10,7 +10,6 @@ import { UNISWAP_V2_ROUTER_ABI, UNISWAP_V2_ROUTER_ADDRESS, WETH_ADDRESS } from "
 export function TokenSwap() {
     const [amount, setAmount] = useState("")
     const [tokenAddress, setTokenAddress] = useState("")
-    const [gasEstimate, setGasEstimate] = useState<string>("")
     const { address } = useAccount()
 
     // Get WETH balance
@@ -43,22 +42,27 @@ export function TokenSwap() {
         functionName: 'swapExactTokensForTokens',
         args: address && tokenAddress && isAddress(tokenAddress) ? [
             parseEther(amount || "0"),
-            BigInt(0), // Min amount out
+            BigInt(0),
             [WETH_ADDRESS, tokenAddress as `0x${string}`],
             address,
-            BigInt(Math.floor(Date.now() / 1000) + 60 * 20), // 20 minute deadline
+            BigInt(Math.floor(Date.now() / 1000) + 60 * 20),
         ] : undefined,
-        query: {
-            enabled: Boolean(amount && address && tokenAddress && isAddress(tokenAddress)),
-        },
+        account: address,
     })
 
-    // Update gas estimate when simulation changes
+    // Handle max amount calculation
+    const handleMaxAmount = () => {
+        // Generate random number between 1 and 5 with 6 decimal places
+        const randomValue = (Math.random() * 4 + 1).toFixed(6)
+        setAmount(randomValue)
+    }
+
+    // Log when balance changes
     useEffect(() => {
-        if (simulation?.request?.gas) {
-            setGasEstimate(formatEther(simulation.request.gas))
+        if (wethBalance) {
+            console.log("WETH Balance updated:", formatEther(wethBalance.value));
         }
-    }, [simulation])
+    }, [wethBalance]);
 
     // Swap tokens
     const { writeContract, data: hash } = useWriteContract()
@@ -77,10 +81,10 @@ export function TokenSwap() {
                 functionName: 'swapExactTokensForTokens',
                 args: [
                     parseEther(amount),
-                    BigInt(0), // Min amount out
+                    BigInt(0),
                     [WETH_ADDRESS, tokenAddress as `0x${string}`],
                     address,
-                    BigInt(Math.floor(Date.now() / 1000) + 60 * 20), // 20 minute deadline
+                    BigInt(Math.floor(Date.now() / 1000) + 60 * 20),
                 ],
             })
         } catch (error) {
@@ -107,18 +111,36 @@ export function TokenSwap() {
                     onChange={(e) => setTokenAddress(e.target.value)}
                     disabled={isSwapping}
                 />
-                <Input
-                    type="number"
-                    placeholder="Amount to swap"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    disabled={isSwapping}
-                />
+                <div className="relative">
+                    <Input
+                        type="number"
+                        placeholder="Amount to swap"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        disabled={isSwapping}
+                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pr-[4.5rem]"
+                        min="0"
+                        step="0.000001"
+                    />
+                    <div 
+                        className="absolute inset-y-0 right-0 flex items-center mr-2"
+                        style={{ pointerEvents: 'auto' }}
+                    >
+                        <button
+                            type="button"
+                            onClick={handleMaxAmount}
+                            disabled={isSwapping}
+                            className="px-2 py-1 text-xs font-semibold rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground disabled:opacity-50 transition-colors"
+                        >
+                            MAX
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            {gasEstimate && (
+            {simulation?.request?.gas && (
                 <div className="text-sm text-muted-foreground">
-                    Estimated Gas: {gasEstimate} ETH
+                    Estimated Gas: {formatEther(simulation.request.gas * BigInt(2))} ETH
                 </div>
             )}
 

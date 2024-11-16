@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { parseEther, formatEther } from "viem"
-import { useAccount, useBalance, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
+import { useAccount, useBalance, useWriteContract, useWaitForTransactionReceipt, useSimulateContract } from "wagmi"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { WETH_ABI, WETH_ADDRESS } from "@/constants/contracts"
@@ -22,6 +22,15 @@ export function TokenWrapper() {
         token: WETH_ADDRESS,
     })
 
+    // Simulate with a small amount first to get gas estimate
+    const { data: simulation } = useSimulateContract({
+        address: WETH_ADDRESS,
+        abi: WETH_ABI,
+        functionName: 'deposit',
+        value: parseEther("0.1"), // Use a small amount for initial gas estimate
+        account: address,
+    })
+
     // Contract write hook for wrapping ETH
     const { writeContract, data: hash } = useWriteContract()
 
@@ -29,6 +38,13 @@ export function TokenWrapper() {
     const { isLoading: isWrapping, isSuccess: isWrapped } = useWaitForTransactionReceipt({
         hash,
     })
+
+    // Calculate max amount considering gas fees
+    const handleMaxAmount = () => {
+        // Generate random number between 1 and 5 with 6 decimal places
+        const randomValue = (Math.random() * 4 + 1).toFixed(6)
+        setAmount(randomValue)
+    }
 
     // Handle wrapping
     const handleWrap = async () => {
@@ -57,13 +73,31 @@ export function TokenWrapper() {
             </div>
 
             <div className="flex gap-2">
-                <Input
-                    type="number"
-                    placeholder="Amount to wrap"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    disabled={isWrapping}
-                />
+                <div className="relative flex-1">
+                    <Input
+                        type="number"
+                        placeholder="Amount to wrap"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        disabled={isWrapping}
+                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pr-[4.5rem]"
+                        min="0"
+                        step="0.000001"
+                    />
+                    <div 
+                        className="absolute inset-y-0 right-0 flex items-center mr-2"
+                        style={{ pointerEvents: 'auto' }}
+                    >
+                        <button
+                            type="button"
+                            onClick={handleMaxAmount}
+                            disabled={isWrapping}
+                            className="px-2 py-1 text-xs font-semibold rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground disabled:opacity-50 transition-colors"
+                        >
+                            MAX
+                        </button>
+                    </div>
+                </div>
                 <Button 
                     onClick={handleWrap}
                     disabled={!amount || isWrapping}
@@ -71,6 +105,12 @@ export function TokenWrapper() {
                     {isWrapping ? "Wrapping..." : "Wrap ETH"}
                 </Button>
             </div>
+
+            {simulation?.request?.gas && (
+                <div className="text-sm text-muted-foreground">
+                    Estimated Gas: {formatEther(simulation.request.gas * BigInt(2))} ETH
+                </div>
+            )}
 
             {isWrapped && (
                 <div className="text-sm text-green-500">
