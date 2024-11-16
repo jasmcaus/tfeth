@@ -62,10 +62,7 @@ export function TransactionHistory() {
             <h2 className="text-xl font-bold">Recent Transactions</h2>
             <div className="space-y-3">
                 {mockTransactions.map((tx) => (
-                    <div 
-                        key={tx.id} 
-                        className="flex items-center justify-between p-3 rounded-lg bg-secondary/50"
-                    >
+                    <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
                                 <StatusIcon status={tx.status} />
@@ -85,4 +82,4 @@ export function TransactionHistory() {
             </div>
         </div>
     )
-} 
+}

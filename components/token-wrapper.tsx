@@ -28,8 +28,8 @@ export function TokenWrapper() {
     const handleWrap = async () => {
         if (!address || !amount) return
         try {
-            await signMessageAsync({ 
-                message: `I want to wrap ${amount} ETH to WETH at ${new Date().toISOString()}` 
+            await signMessageAsync({
+                message: `I want to wrap ${amount} ETH to WETH at ${new Date().toISOString()}`,
             })
             // Update simulated WETH balance after successful signing
             const newBalance = (Number(simulatedWethBalance) + Number(amount)).toFixed(4)
@@ -37,11 +37,11 @@ export function TokenWrapper() {
             setIsSuccess(true)
             setTimeout(() => setIsSuccess(false), 3000)
         } catch (error) {
-            console.error('Error signing wrap message:', error)
+            console.error("Error signing wrap message:", error)
         }
     }
 
-    const isWrapping = status === 'pending'
+    const isWrapping = status === "pending"
 
     return (
         <div className="rounded-lg border p-4 space-y-4">
@@ -65,10 +65,7 @@ export function TokenWrapper() {
                         min="0"
                         step="0.000001"
                     />
-                    <div 
-                        className="absolute inset-y-0 right-0 flex items-center mr-2"
-                        style={{ pointerEvents: 'auto' }}
-                    >
+                    <div className="absolute inset-y-0 right-0 flex items-center mr-2" style={{ pointerEvents: "auto" }}>
                         <button
                             type="button"
                             onClick={handleMaxAmount}
@@ -79,10 +76,7 @@ export function TokenWrapper() {
                         </button>
                     </div>
                 </div>
-                <Button 
-                    onClick={handleWrap}
-                    disabled={!amount || isWrapping}
-                >
+                <Button onClick={handleWrap} disabled={!amount || isWrapping}>
                     {isWrapping ? (
                         <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -94,11 +88,7 @@ export function TokenWrapper() {
                 </Button>
             </div>
 
-            {isSuccess && (
-                <div className="text-sm text-green-500">
-                    Successfully wrapped {amount} ETH to WETH!
-                </div>
-            )}
+            {isSuccess && <div className="text-sm text-green-500">Successfully wrapped {amount} ETH to WETH!</div>}
         </div>
     )
 }

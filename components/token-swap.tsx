@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Loader2, ArrowDownIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useDebounce } from "@/hooks/use-debounce"
-import { Token, CurrencyAmount, TradeType } from '@uniswap/sdk-core'
-import { Pair, Route, Trade } from '@uniswap/v2-sdk'
-import { mainnet } from 'wagmi/chains'
+import { Token, CurrencyAmount, TradeType } from "@uniswap/sdk-core"
+import { Pair, Route, Trade } from "@uniswap/v2-sdk"
+import { mainnet } from "wagmi/chains"
 
 const MOCK_BALANCES = {
     WETH: {
@@ -20,25 +20,13 @@ const MOCK_BALANCES = {
     DAI: {
         formatted: "5000",
         value: BigInt("5000000000000000000000"), // 5000 DAI
-    }
+    },
 }
 
 // Token Definitions
-const WETH = new Token(
-    mainnet.id,
-    "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-    18,
-    "WETH",
-    "Wrapped Ether"
-)
+const WETH = new Token(mainnet.id, "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", 18, "WETH", "Wrapped Ether")
 
-const DAI = new Token(
-    mainnet.id,
-    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-    18,
-    "DAI",
-    "Dai Stablecoin"
-)
+const DAI = new Token(mainnet.id, "0x6B175474E89094C44Da98b954EedeAC495271d0F", 18, "DAI", "Dai Stablecoin")
 
 // WETH-DAI pair address on Uniswap V2
 const PAIR_ADDRESS = "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"
@@ -50,7 +38,7 @@ export function TokenSwap() {
     const [isSwapped, setIsSwapped] = useState(false)
     const [isLoadingPrice, setIsLoadingPrice] = useState(false)
     const [exchangeRate, setExchangeRate] = useState<string | null>(null)
-    
+
     const { address } = useAccount()
     const publicClient = usePublicClient()
 
@@ -61,12 +49,12 @@ export function TokenSwap() {
     useEffect(() => {
         const fetchPrice = async () => {
             if (!debouncedWethAmount && !debouncedDaiAmount) return
-            
+
             try {
                 setIsLoadingPrice(true)
 
                 // Get reserves from the pair contract
-                const [reserve0, reserve1] = await publicClient?.readContract({
+                const [reserve0, reserve1] = (await publicClient?.readContract({
                     address: PAIR_ADDRESS,
                     abi: [
                         {
@@ -76,56 +64,49 @@ export function TokenSwap() {
                             outputs: [
                                 { name: "_reserve0", type: "uint112" },
                                 { name: "_reserve1", type: "uint112" },
-                                { name: "_blockTimestampLast", type: "uint32" }
+                                { name: "_blockTimestampLast", type: "uint32" },
                             ],
-                            type: "function"
-                        }
+                            type: "function",
+                        },
                     ],
                     functionName: "getReserves",
-                }) as [bigint, bigint, number]
+                })) as [bigint, bigint, number]
 
                 // Create pair instance
                 const pair = new Pair(
                     CurrencyAmount.fromRawAmount(DAI, reserve0.toString()),
-                    CurrencyAmount.fromRawAmount(WETH, reserve1.toString())
+                    CurrencyAmount.fromRawAmount(WETH, reserve1.toString()),
                 )
 
                 if (activeInput === "WETH" && debouncedWethAmount) {
                     // Create route
                     const route = new Route([pair], WETH, DAI)
-                    
+
                     // Create trade
                     const trade = new Trade(
                         route,
-                        CurrencyAmount.fromRawAmount(
-                            WETH,
-                            parseEther(debouncedWethAmount).toString()
-                        ),
-                        TradeType.EXACT_INPUT
+                        CurrencyAmount.fromRawAmount(WETH, parseEther(debouncedWethAmount).toString()),
+                        TradeType.EXACT_INPUT,
                     )
 
                     setDaiAmount(trade.outputAmount.toSignificant(6))
                     setExchangeRate(`1 WETH = ${route.midPrice.toSignificant(6)} DAI`)
-                }
-                else if (activeInput === "DAI" && debouncedDaiAmount) {
+                } else if (activeInput === "DAI" && debouncedDaiAmount) {
                     // Create route
                     const route = new Route([pair], DAI, WETH)
-                    
+
                     // Create trade
                     const trade = new Trade(
                         route,
-                        CurrencyAmount.fromRawAmount(
-                            DAI,
-                            parseEther(debouncedDaiAmount).toString()
-                        ),
-                        TradeType.EXACT_INPUT
+                        CurrencyAmount.fromRawAmount(DAI, parseEther(debouncedDaiAmount).toString()),
+                        TradeType.EXACT_INPUT,
                     )
 
                     setWethAmount(trade.outputAmount.toSignificant(6))
                     setExchangeRate(`1 DAI = ${route.midPrice.toSignificant(6)} WETH`)
                 }
             } catch (error) {
-                console.error('Error fetching price:', error)
+                console.error("Error fetching price:", error)
             } finally {
                 setIsLoadingPrice(false)
             }
@@ -157,17 +138,17 @@ export function TokenSwap() {
     const handleSwap = async () => {
         if (!address || !wethAmount || !daiAmount) return
         try {
-            await signMessageAsync({ 
-                message: `I want to swap ${wethAmount} WETH for ${daiAmount} DAI at ${new Date().toISOString()}` 
+            await signMessageAsync({
+                message: `I want to swap ${wethAmount} WETH for ${daiAmount} DAI at ${new Date().toISOString()}`,
             })
             setIsSwapped(true)
             setTimeout(() => setIsSwapped(false), 3000)
         } catch (error) {
-            console.error('Error signing message:', error)
+            console.error("Error signing message:", error)
         }
     }
 
-    const isSwapping = status === 'pending'
+    const isSwapping = status === "pending"
 
     return (
         <div className="rounded-xl border bg-gradient-to-b from-muted/50 to-muted p-6 shadow-xl space-y-4">
@@ -177,8 +158,8 @@ export function TokenSwap() {
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <div className="p-1 bg-blue-500/10 rounded-full">
-                                <img 
-                                    src="/weth-logo.png" 
+                                <img
+                                    src="/weth-logo.png"
                                     alt="WETH"
                                     className="w-7 h-7 rounded-full shadow-sm group-hover:scale-105 transition-transform duration-200"
                                 />
@@ -226,8 +207,8 @@ export function TokenSwap() {
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <div className="p-1 bg-yellow-500/10 rounded-full">
-                                <img 
-                                    src="/dai-logo.png" 
+                                <img
+                                    src="/dai-logo.png"
                                     alt="DAI"
                                     className="w-7 h-7 rounded-full shadow-sm group-hover:scale-105 transition-transform duration-200"
                                 />
@@ -261,19 +242,17 @@ export function TokenSwap() {
                         <Loader2 className="h-3 w-3 animate-spin" />
                         Fetching price...
                     </div>
-                ) : exchangeRate && (
-                    <div className="px-3 py-1 bg-muted/50 rounded-full inline-block">
-                        {exchangeRate}
-                    </div>
+                ) : (
+                    exchangeRate && <div className="px-3 py-1 bg-muted/50 rounded-full inline-block">{exchangeRate}</div>
                 )}
             </div>
 
-            <Button 
+            <Button
                 onClick={handleSwap}
                 disabled={!wethAmount || isSwapping || isExceedingBalance()}
                 className={cn(
                     "w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-lg h-12 rounded-xl shadow-lg",
-                    isExceedingBalance() && "opacity-50 cursor-not-allowed"
+                    isExceedingBalance() && "opacity-50 cursor-not-allowed",
                 )}
             >
                 {isSwapping ? (

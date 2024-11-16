@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { formatEther, parseEther } from 'viem'
-import { usePublicClient } from 'wagmi'
+import { useState, useEffect } from "react"
+import { formatEther, parseEther } from "viem"
+import { usePublicClient } from "wagmi"
 
 export function useGasPrice() {
     const [gasPrice, setGasPrice] = useState<bigint | null>(null)
@@ -16,8 +16,8 @@ export function useGasPrice() {
                 setGasPrice(price)
                 setError(null)
             } catch (err) {
-                setError('Failed to fetch gas price')
-                console.error('Gas price fetch error:', err)
+                setError("Failed to fetch gas price")
+                console.error("Gas price fetch error:", err)
             } finally {
                 setIsLoading(false)
             }
@@ -30,4 +30,4 @@ export function useGasPrice() {
     }, [publicClient])
 
     return { gasPrice, isLoading, error }
-} 
+}
