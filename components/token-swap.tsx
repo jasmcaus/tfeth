@@ -1,92 +1,57 @@
 "use client"
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { useToast } from "@/hooks/use-toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowDownUp } from "lucide-react"
 
-const formSchema = z.object({
-    amount: z.string().min(1, "Amount is required"),
-})
+interface TokenSwapProps {
+    address?: string
+}
 
-export function TokenSwap({ address }: { address?: string }) {
-    const [isLoading, setIsLoading] = useState(false)
-    const { toast } = useToast()
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            amount: "",
-        },
-    })
-
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        setIsLoading(true)
-        try {
-            // Mock transaction for now
-            await new Promise((resolve) => setTimeout(resolve, 2000))
-            toast({
-                title: "Success!",
-                description: `Swapped ${values.amount} ETH to WETH`,
-            })
-            form.reset()
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: "Something went wrong",
-                variant: "destructive",
-            })
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
+export function TokenSwap({ address }: TokenSwapProps) {
     return (
-        <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Swap Tokens</h2>
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                        control={form.control}
-                        name="amount"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Amount (ETH)</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="0.0" type="number" step="0.000000000000000001" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+        <div className="space-y-3">
+            <div className="space-y-2">
+                <div className="flex gap-2">
+                    <Select defaultValue="eth">
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="Token" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="eth">ETH</SelectItem>
+                            <SelectItem value="usdc">USDC</SelectItem>
+                            <SelectItem value="usdt">USDT</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Input type="number" placeholder="0.0" className="flex-1" />
+                </div>
+            </div>
 
-                    <div className="flex justify-center">
-                        <ArrowDownUp className="text-muted-foreground" />
-                    </div>
+            <div className="flex justify-center">
+                <Button variant="ghost" size="icon" className="rounded-full">
+                    <ArrowDownUp className="h-4 w-4" />
+                </Button>
+            </div>
 
-                    <FormField
-                        control={form.control}
-                        name="amount"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>You receive (WETH)</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="0.0" disabled value={field.value} onChange={() => {}} />
-                                </FormControl>
-                            </FormItem>
-                        )}
-                    />
+            <div className="space-y-2">
+                <div className="flex gap-2">
+                    <Select defaultValue="usdc">
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="Token" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="eth">ETH</SelectItem>
+                            <SelectItem value="usdc">USDC</SelectItem>
+                            <SelectItem value="usdt">USDT</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Input type="number" placeholder="0.0" className="flex-1" />
+                </div>
+            </div>
 
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? "Processing..." : "Wrap ETH"}
-                    </Button>
-                </form>
-            </Form>
-        </Card>
+            <Button className="w-full">Swap Tokens</Button>
+        </div>
     )
 }
